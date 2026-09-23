@@ -3,6 +3,7 @@ import './App.scss'
 
 const PRODUCTS_URL = 'https://app.econverse.com.br/teste-front-end/junior/tecnologia/lista-produtos/produtos.json'
 const LOCAL_PRODUCTS_URL = '/products.json'
+const WHATSAPP_NUMBER = '5583999999999'
 
 type Product = {
   productName: string
@@ -85,6 +86,37 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
   )
 }
 
+function WhatsAppChat() {
+  const [isOpen, setIsOpen] = useState(false)
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de saber mais sobre os produtos da Econverse.')}`
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && setIsOpen(false)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  return (
+    <div className={`whatsapp-chat ${isOpen ? 'is-open' : ''}`}>
+      {isOpen && (
+        <section className="whatsapp-panel" role="dialog" aria-labelledby="whatsapp-title">
+          <button type="button" className="whatsapp-close" onClick={() => setIsOpen(false)} aria-label="Fechar chat">×</button>
+          <div className="whatsapp-panel-heading">
+            <span className="whatsapp-symbol" aria-hidden="true">wa</span>
+            <div><strong id="whatsapp-title">Fale com a Econverse</strong><span>Estamos por aqui para ajudar</span></div>
+          </div>
+          <p>Oi! Quer uma ajuda para encontrar a tecnologia ideal para você?</p>
+          <a className="whatsapp-link" href={whatsappUrl} target="_blank" rel="noreferrer">Abrir conversa <span aria-hidden="true">↗</span></a>
+        </section>
+      )}
+      <button type="button" className="whatsapp-trigger" onClick={() => setIsOpen((open) => !open)} aria-expanded={isOpen} aria-label={isOpen ? 'Fechar chat do WhatsApp' : 'Abrir chat do WhatsApp'}>
+        <span className="whatsapp-symbol" aria-hidden="true">wa</span>
+        <span className="chat-pulse" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
 function App() {
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
@@ -141,6 +173,7 @@ function App() {
       </main>
       <footer id="contato"><span>econverse</span><span>tecnologia para viver melhor</span></footer>
       {selectedProduct && <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+      <WhatsAppChat />
     </div>
   )
 }
