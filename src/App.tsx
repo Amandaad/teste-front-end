@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.scss'
 
 const PRODUCTS_URL = 'https://app.econverse.com.br/teste-front-end/junior/tecnologia/lista-produtos/produtos.json'
@@ -17,26 +17,28 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)
 
 function Header() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <header className="site-header">
       <a className="brand" href="/" aria-label="Econverse, página inicial">
         <span className="brand-mark">e</span>
         <span>econverse</span>
       </a>
-      <nav aria-label="Navegação principal">
-        <a href="#produtos">Produtos</a>
-        <a href="#sobre">Sobre nós</a>
-        <a href="#contato">Contato</a>
+      <nav className={menuOpen ? 'is-open' : ''} aria-label="Navegação principal">
+        <a href="#produtos" onClick={() => setMenuOpen(false)}>Produtos</a>
+        <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre nós</a>
+        <a href="#contato" onClick={() => setMenuOpen(false)}>Contato</a>
       </nav>
-      <button className="menu-button" type="button" aria-label="Abrir menu"><span /><span /></button>
+      <button className="menu-button" type="button" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}><span /><span /></button>
     </header>
   )
 }
 
 function ProductCard({ product, onSelect }: { product: Product; onSelect: (product: Product) => void }) {
   return (
-    <article className="product-card" onClick={() => onSelect(product)}>
-      <button type="button" className="card-action" aria-label={`Ver detalhes de ${product.productName}`} onClick={() => onSelect(product)}>
+    <article className="product-card" role="button" tabIndex={0} onClick={() => onSelect(product)} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && onSelect(product)}>
+      <button type="button" className="card-action" aria-label={`Ver detalhes de ${product.productName}`} onClick={(event) => { event.stopPropagation(); onSelect(product) }}>
         <span aria-hidden="true">↗</span>
       </button>
       <div className="product-image-wrap">
@@ -53,10 +55,13 @@ function ProductCard({ product, onSelect }: { product: Product; onSelect: (produ
 }
 
 function ProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     document.addEventListener('keydown', handleKeyDown)
     document.body.style.overflow = 'hidden'
+    closeButtonRef.current?.focus()
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
@@ -66,7 +71,7 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button type="button" className="close-button" onClick={onClose} aria-label="Fechar detalhes">×</button>
+        <button ref={closeButtonRef} type="button" className="close-button" onClick={onClose} aria-label="Fechar detalhes">×</button>
         <div className="modal-image"><img src={product.photo} alt="" /></div>
         <div className="modal-content">
           <p className="product-kicker">Detalhes do produto</p>
@@ -117,16 +122,21 @@ function App() {
           <h1>Objetos que<br /><em>movem</em> ideias.</h1>
           <p className="hero-copy">Uma curadoria de tecnologia para deixar o seu dia mais simples, conectado e extraordinário.</p>
         </section>
+        <section className="manifesto" id="sobre" aria-label="Sobre a Econverse">
+          <p className="eyebrow">O jeito Econverse</p>
+          <p className="manifesto-copy">Menos ruído. Mais intenção. Selecionamos tecnologia que faz sentido para a vida real.</p>
+          <span className="manifesto-index">01 / 03</span>
+        </section>
         <section className="catalog" aria-labelledby="catalog-title">
           <div className="catalog-heading"><div><p className="eyebrow">Seleção da semana</p><h2 id="catalog-title">Vitrine de produtos</h2></div><span className="count-label">{visibleProducts.length} itens</span></div>
           <div className="catalog-tools">
-            <label className="search-field"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produto" aria-label="Buscar produto" /></label>
+            <label className="search-field"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produto" aria-label="Buscar produto" /><button type="button" className="clear-search" aria-label="Limpar busca" onClick={() => setSearch('')} hidden={!search}>×</button></label>
             <label className="sort-field"><span>Ordenar por</span><select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar produtos"><option value="featured">Mais relevantes</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option></select></label>
           </div>
           {loading && <p className="state-message">Carregando produtos...</p>}
           {error && <p className="state-message error-message">{error}</p>}
           {!loading && !error && <div className="product-grid">{visibleProducts.map((product) => <ProductCard key={`${product.productName}-${product.price}`} product={product} onSelect={setSelectedProduct} />)}</div>}
-          {!loading && !error && visibleProducts.length === 0 && <p className="state-message">Nenhum produto encontrado.</p>}
+          {!loading && !error && visibleProducts.length === 0 && <div className="state-message"><p>Nenhum produto encontrado.</p><button type="button" className="text-button" onClick={() => setSearch('')}>Limpar busca</button></div>}
         </section>
       </main>
       <footer id="contato"><span>econverse</span><span>tecnologia para viver melhor</span></footer>
